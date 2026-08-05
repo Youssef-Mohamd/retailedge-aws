@@ -1,6 +1,6 @@
-# ============================================
+
 # Launch Template 
-# ============================================
+# --------------------------
 resource "aws_launch_template" "app" {
   name_prefix   = "retailedge-app-"
   image_id      = var.golden_ami_id
@@ -37,9 +37,9 @@ resource "aws_launch_template" "app" {
   }
 }
 
-# ============================================
+
 # Auto Scaling Group
-# ============================================
+# --------------------------
 resource "aws_autoscaling_group" "app" {
   name               = "retailedge-asg"
   vpc_zone_identifier = [
@@ -87,9 +87,9 @@ resource "aws_autoscaling_group" "app" {
   }
 }
 
-# ============================================
+
 # Scaling Policy (Target Tracking)
-# ============================================
+# # --------------------------
 resource "aws_autoscaling_policy" "cpu" {
   name                   = "retailedge-cpu-policy"
   autoscaling_group_name = aws_autoscaling_group.app.name
@@ -104,7 +104,7 @@ resource "aws_autoscaling_policy" "cpu" {
   }
 }
 
-# ============================================
+
 # Scheduled Scaling (Bonus)
 # ============================================
 resource "aws_autoscaling_schedule" "friday_spike" {
