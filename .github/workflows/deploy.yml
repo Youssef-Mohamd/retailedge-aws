@@ -1,88 +1,88 @@
 
-name: Deploy to AWS
+# name: Deploy to AWS
 
-on:
-  push:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
 
-jobs:
-  # ============================================
-  # Job 1: Validate Terraform
-  # ============================================
-  validate:
-    name:  Validate Terraform
-    runs-on: ubuntu-latest
+# jobs:
+#   # ============================================
+#   # Job 1: Validate Terraform
+#   # ============================================
+#   validate:
+#     name:  Validate Terraform
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.5.0
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v2
+#         with:
+#           terraform_version: 1.5.0
 
-      - name: Terraform Init
-        run: terraform init
-        working-directory: ./terraform
+#       - name: Terraform Init
+#         run: terraform init
+#         working-directory: ./terraform
 
-      - name: Terraform Validate
-        run: terraform validate
-        working-directory: ./terraform
+#       - name: Terraform Validate
+#         run: terraform validate
+#         working-directory: ./terraform
 
-      - name: Terraform Format Check
-        run: terraform fmt -check
-        working-directory: ./terraform
+#       - name: Terraform Format Check
+#         run: terraform fmt -check
+#         working-directory: ./terraform
 
-  # ============================================
-  # Job 2: Plan (Preview)
-  # ============================================
-  plan:
-    name:  Terraform Plan
-    runs-on: ubuntu-latest
-    needs: validate
+#   # ============================================
+#   # Job 2: Plan (Preview)
+#   # ============================================
+#   plan:
+#     name:  Terraform Plan
+#     runs-on: ubuntu-latest
+#     needs: validate
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.5.0
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v2
+#         with:
+#           terraform_version: 1.5.0
 
-      - name: Terraform Init
-        run: terraform init
-        working-directory: ./terraform
+#       - name: Terraform Init
+#         run: terraform init
+#         working-directory: ./terraform
 
-      - name: Terraform Plan
-        run: terraform plan -no-color
-        working-directory: ./terraform
-        continue-on-error: true
+#       - name: Terraform Plan
+#         run: terraform plan -no-color
+#         working-directory: ./terraform
+#         continue-on-error: true
 
-  # ============================================
-  # Job 3: Deploy (Manual Approval)
-  # ============================================
-  deploy:
-    name:  Deploy to Production
-    runs-on: ubuntu-latest
-    needs: plan
-    environment: production
+#   # ============================================
+#   # Job 3: Deploy (Manual Approval)
+#   # ============================================
+#   deploy:
+#     name:  Deploy to Production
+#     runs-on: ubuntu-latest
+#     needs: plan
+#     environment: production
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.5.0
+#       - name: Setup Terraform
+#         uses: hashicorp/setup-terraform@v2
+#         with:
+#           terraform_version: 1.5.0
 
-      - name: Terraform Init
-        run: terraform init
-        working-directory: ./terraform
+#       - name: Terraform Init
+#         run: terraform init
+#         working-directory: ./terraform
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve
-        working-directory: ./terraform
+#       - name: Terraform Apply
+#         run: terraform apply -auto-approve
+#         working-directory: ./terraform
