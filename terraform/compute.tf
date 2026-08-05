@@ -116,8 +116,8 @@ resource "aws_autoscaling_schedule" "friday_spike" {
   autoscaling_group_name = aws_autoscaling_group.app.name
 }
 
-# ============================================
-# CloudWatch Alarm for High CPU (Optional)
+
+# CloudWatch Alarm for High CPU 
 # ============================================
 resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   alarm_name          = "retailedge-high-cpu"
