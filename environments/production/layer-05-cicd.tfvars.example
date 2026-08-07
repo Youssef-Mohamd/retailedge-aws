@@ -1,0 +1,9 @@
+aws_region = "us-east-1"
+environment = "production"
+github_repository = "Youssef-Mohamd/retailedge-aws"
+autoscaling_group_name = "retailedge-production-asg"
+alb_arn_suffix = "app/retailedge-production-alb/xxxxxxxxxxxxxxxx"
+rds_instance_identifier = "retailedge-production-mysql"
+redis_replication_group_id = "retailedge-production-redis"
+enable_redis_alarm = true
+notification_email = "ops@example.com"
