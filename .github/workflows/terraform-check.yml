@@ -1,0 +1,36 @@
+name: Terraform Checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        layer:
+          - layer-02-network
+          - layer-03-compute
+          - layer-04-data
+          - layer-05-cicd
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Format check
+        working-directory: layers/${{ matrix.layer }}
+        run: terraform fmt -check -recursive
+      - name: Initialize
+        working-directory: layers/${{ matrix.layer }}
+        run: terraform init -backend=false
+      - name: Validate
+        working-directory: layers/${{ matrix.layer }}
+        run: terraform validate
