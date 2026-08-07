@@ -14,6 +14,8 @@ CodeDeploy uses `CodeDeployDefault.OneAtATime` for an in-place rolling deploymen
 
 The application instances' Golden AMI must contain Docker, the CodeDeploy agent, AWS CLI, and the application runtime required by the deployment scripts.
 
+Because the application instances are private, CodeDeploy requires outbound HTTPS connectivity. For production this is provided through the NAT Gateway design. The sandbox keeps NAT disabled by default to control cost, so the CI/CD deployment should not be executed against the sandbox until an outbound path is deliberately enabled. The S3 gateway endpoint is free and covers S3 access, but it does not replace the CodeDeploy endpoint connectivity requirement.
+
 ## Required alarms
 
 | Alarm | Metric | Threshold | Action |
@@ -26,7 +28,7 @@ The application instances' Golden AMI must contain Docker, the CodeDeploy agent,
 ## Sandbox cost controls
 
 - Keep the ECR repository small and clean old images.
-- Do not run NAT Gateways unless required.
+- Do not run NAT Gateways unless the deployment path genuinely needs one.
 - Keep CodeDeploy and monitoring resources but avoid unnecessary high-frequency custom metrics.
 - Destroy the sandbox when validation is complete.
 
