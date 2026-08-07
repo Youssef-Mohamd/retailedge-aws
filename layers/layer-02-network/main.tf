@@ -17,9 +17,7 @@ resource "aws_vpc" "main" {
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
-  tags = {
-    Name = "${local.name_prefix}-igw"
-  }
+  tags = { Name = "${local.name_prefix}-igw" }
 }
 
 resource "aws_subnet" "public" {
@@ -67,9 +65,7 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.main.id
   }
 
-  tags = {
-    Name = "${local.name_prefix}-public-rt"
-  }
+  tags = { Name = "${local.name_prefix}-public-rt" }
 }
 
 resource "aws_route_table_association" "public" {
@@ -79,25 +75,22 @@ resource "aws_route_table_association" "public" {
 }
 
 resource "aws_route_table" "private" {
+  count  = 2
   vpc_id = aws_vpc.main.id
 
-  tags = {
-    Name = "${local.name_prefix}-private-rt"
-  }
+  tags = { Name = "${local.name_prefix}-private-rt-${count.index + 1}" }
 }
 
 resource "aws_route_table_association" "private" {
   count          = 2
   subnet_id      = aws_subnet.private[count.index].id
-  route_table_id = aws_route_table.private.id
+  route_table_id = aws_route_table.private[count.index].id
 }
 
 resource "aws_route_table" "database" {
   vpc_id = aws_vpc.main.id
 
-  tags = {
-    Name = "${local.name_prefix}-database-rt"
-  }
+  tags = { Name = "${local.name_prefix}-database-rt" }
 }
 
 resource "aws_route_table_association" "database" {
