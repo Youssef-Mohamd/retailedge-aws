@@ -1,0 +1,19 @@
+aws_region = "us-east-1"
+environment = "sandbox"
+instance_type = "t3.small"
+min_size = 1
+desired_capacity = 1
+max_size = 2
+target_cpu = 60
+enable_scheduled_scaling = false
+certificate_arn = null
+
+# Set this to an AMI that already contains the application and CodeDeploy agent.
+golden_ami_id = "ami-xxxxxxxxxxxxxxxxx"
+
+# Fill these values from Layer 2 outputs.
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx"
+public_subnet_ids = ["subnet-xxxxxxxxxxxxxxxxx", "subnet-yyyyyyyyyyyyyyyyy"]
+private_subnet_ids = ["subnet-xxxxxxxxxxxxxxxxx", "subnet-yyyyyyyyyyyyyyyyy"]
+alb_security_group_id = "sg-xxxxxxxxxxxxxxxxx"
+app_security_group_id = "sg-yyyyyyyyyyyyyyyyy"
