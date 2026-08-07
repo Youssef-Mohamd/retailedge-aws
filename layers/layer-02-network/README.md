@@ -9,13 +9,21 @@ This layer implements the network portion of the assignment.
 - Private: `10.0.11.0/24`, `10.0.12.0/24`
 - Database: `10.0.21.0/24`, `10.0.22.0/24`
 
+## Network design
+
+- Two Availability Zones are used for the public, private, and database tiers.
+- Public subnets use the Internet Gateway route table.
+- Private application subnets have no Internet Gateway or NAT route.
+- Database subnets use an isolated route table with no internet route.
+- NAT Gateway is not part of this project because it is not required by the assignment.
+
 ## Security boundaries
 
-`ALB → App:8080 → RDS:3306` and `App → Redis:6379` are the only application data paths. The database subnets have no route to an Internet Gateway. Security Groups are stateful; NACLs are subnet-level stateless filters and are not required for the basic assignment.
+`ALB → App:8080 → RDS:3306` and `App → Redis:6379` are the application data paths. Security Groups enforce these boundaries. Database subnets do not have a route to an Internet Gateway. NACLs are not required for the basic assignment.
 
 ## Sandbox choice
 
-The private route table has no NAT route by default. This avoids an always-on NAT Gateway while the sandbox is being validated. Production can add a NAT Gateway when private instances need outbound internet access.
+The sandbox keeps the same subnet and security boundaries while avoiding unnecessary paid networking resources. No NAT Gateway or NAT Elastic IP is created.
 
 ## Validation
 
