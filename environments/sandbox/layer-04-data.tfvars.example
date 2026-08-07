@@ -1,0 +1,18 @@
+aws_region = "us-east-1"
+environment = "sandbox"
+rds_instance_class = "db.t3.micro"
+rds_multi_az = false
+rds_storage_gb = 20
+rds_backup_retention_days = 7
+redis_node_type = "cache.t3.micro"
+redis_nodes = 1
+enable_redis = true
+
+# Fill these values from Layer 2 outputs.
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx"
+database_subnet_ids = ["subnet-xxxxxxxxxxxxxxxxx", "subnet-yyyyyyyyyyyyyyyyy"]
+rds_security_group_id = "sg-xxxxxxxxxxxxxxxxx"
+redis_security_group_id = "sg-yyyyyyyyyyyyyyyyy"
+
+# Never commit a real database password.
+# db_password = "set-locally-only"
