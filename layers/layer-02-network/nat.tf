@@ -21,7 +21,7 @@ resource "aws_nat_gateway" "main" {
 
 resource "aws_route" "private_nat" {
   count                  = var.enable_nat_gateway ? var.nat_gateway_count : 0
-  route_table_id         = aws_route_table.private.id
+  route_table_id         = aws_route_table.private[count.index].id
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = aws_nat_gateway.main[count.index].id
 }
