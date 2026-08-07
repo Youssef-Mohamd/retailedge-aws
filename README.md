@@ -56,7 +56,7 @@ The sandbox is designed to reduce cost while preserving the security boundaries 
 - RDS Single-AZ with `db.t3.micro`.
 - Small EC2 Auto Scaling range.
 - One Redis node when enabled and affordable for the account.
-- No NAT Gateway by default.
+- No NAT Gateway or NAT Elastic IP.
 - HTTP ALB listener is available for sandbox validation when no ACM certificate/domain is configured.
 
 Production retains the assignment's target values such as ASG min 2 / desired 2 / max 10 and RDS Multi-AZ.
