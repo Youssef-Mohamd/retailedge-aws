@@ -2,19 +2,15 @@
 
 AWS migration and cloud infrastructure implementation for the RetailEdge three-tier application.
 
-## Infrastructure layers
+## Project layers
 
-- Layer 1: Network & Security
-- Layer 2: Compute & Auto Scaling
-- Layer 3: Data & Migration
-- Layer 4: Observability
-- Layer 5: CI/CD & Go-Live
+- **Layer 1 — Discovery & Architecture Design:** architecture diagram, migration strategy, TCO, and design decisions.
+- **Layer 2 — Network Foundation & Security:** VPC, public/private/database subnets, routes, and least-privilege Security Groups.
+- **Layer 3 — Compute & Auto Scaling:** ALB, Launch Template, Auto Scaling Group, target tracking, instance refresh, and scheduled scaling.
+- **Layer 4 — Data & Migration:** RDS MySQL, ElastiCache Redis, S3, and the DMS cutover plan.
+- **Layer 5 — CI/CD & Go-Live:** ECR, CodeDeploy, GitHub Actions OIDC, CloudWatch alarms, SNS, and the go-live checklist.
 
-Infrastructure is organized by layer so each part can be reviewed, tested, and deployed independently.
-
-## Environments
-
-The Terraform configuration supports a cost-controlled sandbox deployment and a production-oriented configuration. Production architecture decisions are documented separately from the resources intended to run in the AWS sandbox.
+The structure follows the original project rubric: 20 points per layer, 100 points total, with the bonus work documented where applicable.
 
 ## Repository structure
 
@@ -22,16 +18,66 @@ The Terraform configuration supports a cost-controlled sandbox deployment and a 
 retailedge-aws/
 ├── architecture/
 ├── layers/
-│   ├── layer-01-network/
-│   ├── layer-02-compute/
-│   ├── layer-03-data/
-│   ├── layer-04-observability/
+│   ├── layer-01-architecture/
+│   ├── layer-02-network/
+│   ├── layer-03-compute/
+│   ├── layer-04-data/
 │   └── layer-05-cicd/
 ├── environments/
 │   ├── sandbox/
 │   └── production/
+├── deploy/
 ├── scripts/
 └── .github/workflows/
 ```
 
-See each layer README for its resources, dependencies, variables, deployment notes, and validation steps.
+## Deployment approach
+
+The Terraform roots are intentionally separated so the infrastructure can be applied and verified one layer at a time:
+
+```text
+Layer 2 Network
+      ↓
+Layer 3 Compute
+      ↓
+Layer 4 Data
+      ↓
+Layer 5 CI/CD + Monitoring
+```
+
+Layer 1 is documentation and does not create AWS resources.
+
+## Sandbox versus production
+
+The repository contains two profiles using the same architecture decisions but different resource sizes.
+
+The sandbox is designed to reduce cost while preserving the security boundaries of the target architecture:
+
+- RDS Single-AZ with `db.t3.micro`.
+- Small EC2 Auto Scaling range.
+- One Redis node when enabled and affordable for the account.
+- No NAT Gateway by default.
+- HTTP ALB listener is available for sandbox validation when no ACM certificate/domain is configured.
+
+Production retains the assignment's target values such as ASG min 2 / desired 2 / max 10 and RDS Multi-AZ.
+
+## Secrets
+
+Never commit AWS credentials or database passwords. Real passwords belong in local ignored tfvars files or another secret-management mechanism.
+
+## Validation
+
+From each layer directory:
+
+```bash
+terraform fmt -check
+terraform init
+terraform validate
+terraform plan -var-file=../../environments/sandbox/layer-XX-*.tfvars
+```
+
+Review the plan before `terraform apply`.
+
+## Important
+
+The original starter `terraform/` directory is being replaced by the layer-based structure. The old files are kept only until the new implementation has been reviewed; they are not the source of truth.
