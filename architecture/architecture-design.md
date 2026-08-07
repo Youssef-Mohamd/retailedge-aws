@@ -26,8 +26,10 @@ RetailEdge is a mid-size e-commerce platform with 200,000 monthly active users a
 | Tier | AZ-a | AZ-b | Internet access |
 |---|---|---|---|
 | Public | 10.0.1.0/24 | 10.0.2.0/24 | Internet Gateway |
-| Private | 10.0.11.0/24 | 10.0.12.0/24 | NAT only when required |
-| Database | 10.0.21.0/24 | 10.0.22.0/24 | Isolated |
+| Private | 10.0.11.0/24 | 10.0.12.0/24 | None |
+| Database | 10.0.21.0/24 | 10.0.22.0/24 | None |
+
+The application and database tiers do not have direct Internet Gateway access. NAT Gateway is not included because it is not required by the project.
 
 ## Sandbox Profile
 
@@ -36,7 +38,7 @@ The AWS sandbox uses the same architecture boundaries while reducing continuousl
 - EC2: 1 desired, max 2.
 - RDS: `db.t3.micro`, Single-AZ.
 - Redis: one small node when the sandbox account has sufficient Free Plan credits.
-- NAT Gateway: disabled unless a private instance genuinely requires outbound internet access.
+- No NAT Gateway or NAT Elastic IP.
 - HTTPS/CloudFront/Route 53 are production capabilities; sandbox validation can use the ALB HTTP listener when no domain/certificate is available.
 
 AWS's current Free Plan provides new accounts with credits and has different eligibility rules from older Free Tier accounts. EC2 `t3.micro` and `t3.small` are currently listed as eligible instance types for accounts created on or after July 15, 2025, while RDS Free Tier supports `db.t3.micro`/`db.t4g.micro` and excludes Multi-AZ. Verify the actual account's Free Tier/credit status before deployment.
