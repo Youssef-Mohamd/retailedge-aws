@@ -22,7 +22,7 @@ provider "aws" {
 }
 
 module "network" {
-  source = "../../modules/network"
+  source = "../layers/layer-01-network"
 
   project_name       = var.project_name
   environment        = var.environment
@@ -34,7 +34,7 @@ module "network" {
 }
 
 module "security" {
-  source = "../../modules/security"
+  source = "../layers/layer-01-network"
 
   project_name = var.project_name
   environment  = var.environment
