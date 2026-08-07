@@ -32,11 +32,3 @@ module "network" {
   private_subnets    = var.private_subnets
   database_subnets   = var.database_subnets
 }
-
-module "security" {
-  source = "../layers/layer-01-network"
-
-  project_name = var.project_name
-  environment  = var.environment
-  vpc_id       = module.network.vpc_id
-}
