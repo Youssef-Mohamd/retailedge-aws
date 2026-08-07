@@ -16,3 +16,12 @@
 # Local environment files
 .env
 .env.*
+
+# Deployment artifacts
+release.zip
+*.zip
+
+# Local credentials and keys
+.aws/
+*.pem
+*.key
