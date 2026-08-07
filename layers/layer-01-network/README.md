@@ -1,5 +1,6 @@
 # Layer 01 — Network & Security Foundation
 
+
 This layer creates the foundational AWS network for RetailEdge.
 
 ## Scope
