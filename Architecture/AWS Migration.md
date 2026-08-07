@@ -1,56 +1,32 @@
-# RetailEdge Inc. — AWS Migration: Layer 1
+# RetailEdge AWS Migration
 
----
+The current source of truth for Layer 1 is now:
 
-## Task 1.2 — Migration Strategy
+- `layers/layer-01-architecture/README.md`
+- `architecture/architecture-design.md`
+- `architecture/migration-strategy.md`
+- `architecture/tco.md`
 
-### Strategy Table
+## Migration strategy
 
 | Component | Strategy | Justification |
-| :--- | :--- | :--- |
-| **Web Server** (Apache) | **Replatform** | Move to EC2 + ALB + Auto Scaling. No code changes, just config. |
-| **Application** (PHP/Laravel) | **Replatform** | Move to EC2 + ElastiCache Redis. No code changes, just cache setup. |
-| **Database** (MySQL) | **Replatform** | Move to RDS Multi-AZ for HA & automatic failover. No schema changes. |
-| **Static Assets** | **Replatform** | Move to S3 + CloudFront for faster delivery & lower EC2 load. |
+|---|---|---|
+| Web server | Replatform | Move Apache/PHP to EC2 behind ALB and Auto Scaling without a rewrite. |
+| Application | Replatform | Keep the application while replacing manually managed capacity with Auto Scaling and managed caching. |
+| Database | Replatform | Move MySQL to RDS while keeping the same database engine. |
+| Static assets | Replatform | Store assets in S3 and deliver them through CloudFront. |
 
-**Why Replatform over Refactor?** 90-day timeline, no time for full rewrite.
+## Cost model
 
----
+The earlier Pricing Calculator estimate in this repository is retained as a planning reference. It is not a Free Plan guarantee and should not be used as the expected sandbox bill.
 
-## Task 1.3 — TCO Comparison
+The sandbox profile deliberately reduces continuously running resources: RDS Single-AZ, a small ASG, optional single-node Redis, and no NAT Gateway by default.
 
-### AWS Cost Estimate (On-Demand, us-east-1)
+## Migration sequence
 
-| Service | Monthly Cost |
-| :--- | :--- |
-| EC2 (2 × t3.small) | $74.50 |
-| RDS (db.t3.small, Multi-AZ) | $112.79 |
-| S3 (100 GB Standard) | $3.65 |
-| ALB (1, 2 AZs) | $615.03 |
-| NAT Gateway (2 × 50 GB) | $206.10 |
-| **Total** | **$1,012.07** |
-
-**Annual Cost:** $12,144.84
-
----
-
-### 3-Year Projection
-
-| Year | On-Premises | AWS | Savings |
-| :--- | :--- | :--- | :--- |
-| Year 1 | $18,000 | $12,145 | $5,855 |
-| Year 2 | $18,000 | $12,145 | $5,855 |
-| Year 3 | $18,000 | $12,145 | $5,855 |
-| **Total** | **$54,000** | **$36,435** | **$17,565** |
-
----
-
-### Cost Optimization (Reserved Instances)
-
-| Scenario | Annual Cost | 3-Year Cost | Savings |
-| :--- | :--- | :--- | :--- |
-| On-Demand | $12,145 | $36,435 | $17,565 |
-| Reserved (70% off) | ~$6,000 | ~$18,000 | **$36,000** |
-
----
-
+1. Network foundation.
+2. Compute and ALB.
+3. RDS, Redis, and S3.
+4. DMS full load and CDC rehearsal.
+5. CI/CD, monitoring, and rollback validation.
+6. Weighted Route 53 cutover.
