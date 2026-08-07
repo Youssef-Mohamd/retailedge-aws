@@ -25,6 +25,7 @@ module "network" {
   source = "../../modules/network"
 
   project_name       = var.project_name
+  environment        = var.environment
   vpc_cidr           = var.vpc_cidr
   availability_zones = var.availability_zones
   public_subnets     = var.public_subnets
@@ -35,6 +36,7 @@ module "network" {
 module "security" {
   source = "../../modules/security"
 
-  vpc_id      = module.network.vpc_id
   project_name = var.project_name
+  environment  = var.environment
+  vpc_id       = module.network.vpc_id
 }
