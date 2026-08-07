@@ -1,0 +1,14 @@
+aws_region = "us-east-1"
+environment = "production"
+rds_instance_class = "db.t3.small"
+rds_multi_az = true
+rds_storage_gb = 100
+rds_backup_retention_days = 7
+redis_node_type = "cache.t3.micro"
+redis_nodes = 2
+enable_redis = true
+
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx"
+database_subnet_ids = ["subnet-xxxxxxxxxxxxxxxxx", "subnet-yyyyyyyyyyyyyyyyy"]
+rds_security_group_id = "sg-xxxxxxxxxxxxxxxxx"
+redis_security_group_id = "sg-yyyyyyyyyyyyyyyyy"
