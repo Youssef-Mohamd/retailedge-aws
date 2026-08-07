@@ -1,42 +1,47 @@
-# ============================================
-# Variables for RetailEdge Project
-# ============================================
-
-variable "golden_ami_id" {
-  description = "AMI ID for application instances"
-  type        = string
-  default     = "ami-0c02fb55956c7d316"  # Amazon Linux 2 (us-east-1)
-}
-
-variable "instance_type" {
-  description = "EC2 instance type"
-  type        = string
-  default     = "t3.small"
-}
-
-variable "region" {
-  description = "AWS region"
+variable "aws_region" {
+  description = "AWS region used by the deployment."
   type        = string
   default     = "us-east-1"
 }
 
+variable "environment" {
+  description = "Deployment environment."
+  type        = string
+  default     = "sandbox"
+}
+
+variable "project_name" {
+  description = "Project name used for resource naming and tags."
+  type        = string
+  default     = "retailedge"
+}
+
 variable "vpc_cidr" {
-  description = "CIDR block for VPC"
+  description = "CIDR block for the VPC."
   type        = string
   default     = "10.0.0.0/16"
 }
 
-# ------------------------
-variable "db_username" {
-  description = "Database username"
-  type        = string
-  sensitive   = true
-  default     = "retailedge_admin"
+variable "availability_zones" {
+  description = "Availability Zones used by the network layer."
+  type        = list(string)
+  default     = ["us-east-1a", "us-east-1b"]
 }
 
-variable "db_password" {
-  description = "Database password"
-  type        = string
-  sensitive   = true
-  default     = "------------------"  
+variable "public_subnets" {
+  description = "CIDRs for public subnets."
+  type        = list(string)
+  default     = ["10.0.1.0/24", "10.0.2.0/24"]
+}
+
+variable "private_subnets" {
+  description = "CIDRs for private application subnets."
+  type        = list(string)
+  default     = ["10.0.11.0/24", "10.0.12.0/24"]
+}
+
+variable "database_subnets" {
+  description = "CIDRs for isolated database subnets."
+  type        = list(string)
+  default     = ["10.0.21.0/24", "10.0.22.0/24"]
 }
