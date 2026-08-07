@@ -6,7 +6,6 @@
 **/crash.*.log
 **/*.tfvars
 **/*.tfvars.json
-**/.terraform.lock.hcl
 
 # Terraform override files
 **/override.tf
