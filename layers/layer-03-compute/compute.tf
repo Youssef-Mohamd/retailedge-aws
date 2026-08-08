@@ -13,13 +13,13 @@ resource "aws_lb" "app" {
 
 resource "aws_lb_target_group" "app" {
   name     = "${var.project_name}-${var.environment}-tg"
-  port     = 8080
+  port     = var.app_port
   protocol = "HTTP"
   vpc_id   = var.vpc_id
 
   health_check {
     enabled             = true
-    path                = "/"
+    path                = var.health_check_path
     protocol            = "HTTP"
     port                = "traffic-port"
     healthy_threshold   = 2
