@@ -1,17 +1,3 @@
-resource "aws_ecr_repository" "app" {
-  name                 = "${var.project_name}-${var.environment}"
-  image_tag_mutability = "IMMUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  tags = {
-    Project     = "RetailEdge"
-    Environment = var.environment
-  }
-}
-
 resource "aws_s3_bucket" "artifacts" {
   bucket = "${var.project_name}-${var.environment}-codedeploy-${data.aws_caller_identity.current.account_id}"
 
