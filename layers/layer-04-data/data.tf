@@ -14,7 +14,7 @@ resource "aws_db_instance" "mysql" {
   instance_class          = var.rds_instance_class
   allocated_storage       = var.rds_storage_gb
   max_allocated_storage   = var.rds_storage_gb * 2
-  storage_type            = "gp3"
+  storage_type            = var.rds_storage_type
   storage_encrypted       = true
   db_name                 = var.db_name
   username                = var.db_username
@@ -98,6 +98,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "assets" {
 }
 
 resource "aws_s3_bucket_intelligent_tiering_configuration" "assets" {
+  count  = var.enable_s3_intelligent_tiering ? 1 : 0
   bucket = aws_s3_bucket.assets.id
   name   = "assets-tiering"
 
