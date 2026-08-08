@@ -7,4 +7,3 @@ variable "rds_instance_identifier" { type = string }
 variable "redis_replication_group_id" { type = string default = "" }
 variable "enable_redis_alarm" { type = bool default = false }
 variable "github_repository" { type = string description = "GitHub owner/repository, for example Youssef-Mohamd/retailedge-aws" }
-variable "notification_email" { type = string default = null nullable = true }
