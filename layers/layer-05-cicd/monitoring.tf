@@ -20,7 +20,6 @@ resource "aws_cloudwatch_metric_alarm" "high_error_rate" {
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   threshold           = 1
-  period              = 300
   treat_missing_data  = "notBreaching"
   alarm_description   = "ALB 5xx rate is above one percent for five minutes"
 
@@ -87,7 +86,6 @@ resource "aws_cloudwatch_metric_alarm" "cache_hit_rate" {
   comparison_operator = "LessThanThreshold"
   evaluation_periods  = 1
   threshold           = 70
-  period              = 300
   treat_missing_data  = "notBreaching"
   alarm_description   = "ElastiCache hit rate is below 70 percent"
 
