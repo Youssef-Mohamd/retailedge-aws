@@ -93,16 +93,6 @@ resource "aws_launch_template" "app" {
     http_put_response_hop_limit = 2
   }
 
-  user_data = base64encode(<<-EOF
-    #!/bin/bash
-    if command -v httpd >/dev/null 2>&1; then
-      sed -i 's/^Listen 80$/Listen 8080/' /etc/httpd/conf/httpd.conf || true
-      systemctl enable httpd || true
-      systemctl restart httpd || true
-    fi
-  EOF
-  )
-
   tag_specifications {
     resource_type = "instance"
 
