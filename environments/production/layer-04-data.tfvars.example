@@ -3,10 +3,12 @@ environment = "production"
 rds_instance_class = "db.t3.small"
 rds_multi_az = true
 rds_storage_gb = 100
+rds_storage_type = "gp3"
 rds_backup_retention_days = 7
 redis_node_type = "cache.t3.micro"
 redis_nodes = 2
 enable_redis = true
+enable_s3_intelligent_tiering = true
 
 vpc_id = "vpc-xxxxxxxxxxxxxxxxx"
 database_subnet_ids = ["subnet-xxxxxxxxxxxxxxxxx", "subnet-yyyyyyyyyyyyyyyyy"]
