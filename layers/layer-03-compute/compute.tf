@@ -44,6 +44,7 @@ resource "aws_lb_listener" "http" {
 
     dynamic "forward" {
       for_each = var.certificate_arn == null ? [1] : []
+
       content {
         target_group {
           arn = aws_lb_target_group.app.arn
@@ -53,6 +54,7 @@ resource "aws_lb_listener" "http" {
 
     dynamic "redirect" {
       for_each = var.certificate_arn != null ? [1] : []
+
       content {
         port        = "443"
         protocol    = "HTTPS"
@@ -105,14 +107,14 @@ resource "aws_launch_template" "app" {
 }
 
 resource "aws_autoscaling_group" "app" {
-  name                       = "${var.project_name}-${var.environment}-asg"
-  min_size                   = var.min_size
-  desired_capacity           = var.desired_capacity
-  max_size                   = var.max_size
-  vpc_zone_identifier        = var.private_subnet_ids
-  health_check_type          = "ELB"
-  health_check_grace_period  = 300
-  target_group_arns          = [aws_lb_target_group.app.arn]
+  name                      = "${var.project_name}-${var.environment}-asg"
+  min_size                  = var.min_size
+  desired_capacity          = var.desired_capacity
+  max_size                  = var.max_size
+  vpc_zone_identifier       = var.private_subnet_ids
+  health_check_type         = "ELB"
+  health_check_grace_period = 300
+  target_group_arns         = [aws_lb_target_group.app.arn]
 
   launch_template {
     id      = aws_launch_template.app.id
