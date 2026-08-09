@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -euo pipefail
+
+dnf update -y
+dnf install -y python3
+
+mkdir -p /opt/retailedge
+
+cat > /etc/systemd/system/retailedge.service <<'SERVICEEOF'
+[Unit]
+Description=RetailEdge Application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/retailedge
+ExecStart=/usr/bin/python3 /opt/retailedge/app.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+SERVICEEOF
+
+systemctl daemon-reload
+systemctl enable retailedge
+systemctl restart retailedge
