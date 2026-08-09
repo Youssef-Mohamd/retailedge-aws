@@ -51,6 +51,16 @@ resource "aws_iam_role_policy" "github_actions" {
           "s3:ListBucket"
         ]
         Resource = aws_s3_bucket.artifacts.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:SendCommand",
+          "ssm:ListCommandInvocations",
+          "ssm:GetCommandInvocation",
+          "ssm:DescribeInstanceInformation"
+        ]
+        Resource = "*"
       }
     ]
   })
