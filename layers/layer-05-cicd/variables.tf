@@ -13,10 +13,6 @@ variable "environment" {
   default = "sandbox"
 }
 
-variable "autoscaling_group_name" {
-  type = string
-}
-
 variable "alb_arn_suffix" {
   type = string
 }
