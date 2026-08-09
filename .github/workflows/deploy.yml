@@ -34,6 +34,16 @@ jobs:
       - name: Validate application
         run: python -m py_compile app/app.py
 
+      - name: Run application smoke test
+        run: |
+          python app/app.py > /tmp/retailedge.log 2>&1 &
+          APP_PID=$!
+          trap 'kill $APP_PID 2>/dev/null || true' EXIT
+          sleep 1
+          curl --fail --silent http://127.0.0.1:8080/health
+          echo
+          curl --fail --silent http://127.0.0.1:8080/ | grep -q "RetailEdge"
+
       - name: Package application
         run: |
           mkdir -p dist
