@@ -6,6 +6,7 @@ on:
     paths:
       - "app/**"
       - ".github/workflows/deploy.yml"
+      - "ami/user-data.txt"
   workflow_dispatch:
 
 permissions:
@@ -14,6 +15,8 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: "044957643101"
+  AWS_ROLE_ARN: arn:aws:iam::044957643101:role/retailedge-sandbox-github-actions
   ARTIFACT_BUCKET_PREFIX: retailedge-sandbox-artifacts
   ARTIFACT_KEY: releases/retailedge-app-${{ github.sha }}.zip
 
@@ -52,15 +55,21 @@ jobs:
           zip -q "retailedge-app-${GITHUB_SHA}.zip" app.py
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-region: ${{ env.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          allowed-account-ids: ${{ env.AWS_ACCOUNT_ID }}
+
+      - name: Verify AWS identity
+        run: |
+          aws sts get-caller-identity
 
       - name: Resolve artifact bucket
         id: aws
         run: |
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          test "$ACCOUNT_ID" = "$AWS_ACCOUNT_ID"
           echo "bucket=${ARTIFACT_BUCKET_PREFIX}-${ACCOUNT_ID}" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact to S3
@@ -79,6 +88,7 @@ jobs:
               "set -euo pipefail",
               "mkdir -p /opt/retailedge",
               "aws s3 cp s3://${{ steps.aws.outputs.bucket }}/${ARTIFACT_KEY} /opt/retailedge/retailedge-app.zip",
+              "rm -f /opt/retailedge/app.py",
               "python3 -m zipfile -e /opt/retailedge/retailedge-app.zip /opt/retailedge",
               "python3 -m py_compile /opt/retailedge/app.py",
               "systemctl restart retailedge",

@@ -1,5 +1,13 @@
 data "aws_caller_identity" "current" {}
 
+# GitHub repositories created after 2026-07-15 use immutable OIDC subjects.
+# RetailEdge was created on 2026-07-25, so the owner/repository IDs must be
+# included in the trust policy.
+locals {
+  github_owner_id      = "202123582"
+  github_repository_id = "1311899673"
+}
+
 data "aws_iam_policy_document" "github_assume" {
   statement {
     effect = "Allow"
@@ -20,7 +28,9 @@ data "aws_iam_policy_document" "github_assume" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:*"]
+      values   = [
+        "repo:Youssef-Mohamd@${local.github_owner_id}/retailedge-aws@${local.github_repository_id}:*"
+      ]
     }
   }
 }
