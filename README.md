@@ -2,11 +2,6 @@
 
 > **Production-style three-tier AWS architecture implemented with Terraform, Auto Scaling, managed data services, security controls, monitoring, and GitHub Actions-based deployment.**
 
-**Repository:** https://github.com/Youssef-Mohamd/retailedge-aws  
-**Region:** `us-east-1`  
-**Primary environment:** `sandbox`  
-**Infrastructure:** Terraform  
-**Application runtime:** Python HTTP service on port `8080`
 
 ---
 
@@ -68,37 +63,6 @@ The target design follows a layered three-tier model:
 
 The diagram represents the **target architecture/design**. The Terraform implementation is the source of truth for what is actually provisioned in the current repository.
 
-### Current implementation boundary
-
-| Component | Current status | Notes |
-|---|---|---|
-| VPC | **Implemented** | `10.0.0.0/16` network foundation |
-| Public subnets | **Implemented** | Two subnets across `us-east-1a` and `us-east-1b` |
-| Private application subnets | **Implemented** | Two application subnets across two AZs |
-| Database subnets | **Implemented** | Two database subnets across two AZs |
-| Internet Gateway | **Implemented** | Attached to the VPC |
-| Route tables | **Implemented** | Separate public, private, and database routing |
-| Security Groups | **Implemented** | Tier-to-tier rules for ALB, application, RDS, and Redis |
-| Application Load Balancer | **Implemented** | Internet-facing ALB |
-| Target Group | **Implemented** | HTTP traffic on application port `8080` |
-| Launch Template | **Implemented** | Golden AMI + IAM instance profile + IMDSv2 |
-| Auto Scaling Group | **Implemented** | Private application subnets + ELB health checks |
-| Target tracking | **Implemented** | CPU-based Auto Scaling policy |
-| Scheduled scaling | **Supported** | Configurable through environment variables |
-| RDS MySQL | **Implemented** | Encrypted managed MySQL database |
-| ElastiCache Redis | **Implemented** | Optional; supports single or multi-node configuration |
-| S3 | **Implemented** | Private, versioned, encrypted buckets |
-| GitHub Actions | **Implemented** | Terraform validation + application deployment workflows |
-| GitHub OIDC | **Implemented** | Short-lived AWS authentication for Actions |
-| AWS Systems Manager | **Implemented** | Used for application deployment to EC2 |
-| CloudWatch alarms | **Implemented** | ALB latency/error, RDS CPU, and Redis hit-rate monitoring |
-| Route 53 | **Design component** | Present in the target architecture; no Route 53 Terraform resource in the current implementation |
-| CloudFront | **Design component** | Present in the target architecture; no CloudFront Terraform resource in the current implementation |
-| AWS DMS | **Migration design** | Migration plan is documented; no DMS Terraform resource in the current implementation |
-| Amazon ECR | **Not used** | Container deployment was intentionally removed from the current implementation |
-| CodeDeploy | **Not used** | Replaced by SSM-based deployment in the current CI/CD implementation |
-| NAT Gateway | **Not used in sandbox** | Sandbox routing intentionally avoids NAT Gateway cost |
-| SNS | **Not used** | Monitoring alarms are configured without SNS notification resources |
 
 ---
 
