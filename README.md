@@ -1,141 +1,664 @@
-# RetailEdge AWS Infrastructure
+# RetailEdge — AWS Cloud Infrastructure
 
-AWS migration and cloud infrastructure implementation for the RetailEdge three-tier application.
+> **Production-style three-tier AWS architecture implemented with Terraform, Auto Scaling, managed data services, security controls, monitoring, and GitHub Actions-based deployment.**
 
-## Project layers
+**Repository:** https://github.com/Youssef-Mohamd/retailedge-aws  
+**Region:** `us-east-1`  
+**Primary environment:** `sandbox`  
+**Infrastructure:** Terraform  
+**Application runtime:** Python HTTP service on port `8080`
 
-- **Layer 1 — Discovery & Architecture Design:** architecture diagram, migration strategy, TCO, and design decisions.
-- **Layer 2 — Network Foundation & Security:** VPC, public/private/database subnets, routes, and least-privilege Security Groups.
-- **Layer 3 — Compute & Auto Scaling:** ALB, Launch Template, Auto Scaling Group, target tracking, instance refresh, and scheduled scaling.
-- **Layer 4 — Data & Migration:** RDS MySQL, ElastiCache Redis, S3, and the DMS cutover plan.
-- **Layer 5 — CI/CD & Go-Live:** GitHub Actions OIDC, S3 artifacts, SSM-based deployment, CloudWatch alarms, and the go-live checklist.
+---
 
-The structure follows the original project rubric: 20 points per layer, 100 points total, with the bonus work documented where applicable.
+## 1. Project Overview
 
-## Repository structure
+RetailEdge is an AWS cloud-infrastructure project built around a three-tier application architecture. The project converts the original infrastructure requirements into a modular AWS implementation with clear separation between the **network**, **application/compute**, **data**, and **delivery/operations** concerns.
+
+The infrastructure is defined as code and organized into independent Terraform layers so that each part can be provisioned, validated, and reviewed separately.
+
+### Project goals
+
+- Build a secure three-tier AWS network.
+- Separate public, application, and database workloads.
+- Deploy the application behind an Application Load Balancer.
+- Use a Launch Template and Auto Scaling Group for repeatable compute provisioning.
+- Use managed MySQL and Redis services for persistent and cached data.
+- Apply IAM and Security Group controls between tiers.
+- Automate infrastructure validation with GitHub Actions.
+- Automate application packaging and deployment using GitHub Actions, S3, and AWS Systems Manager.
+- Add CloudWatch monitoring for application, database, and cache signals.
+- Keep the sandbox environment cost-conscious while maintaining the target architectural boundaries.
+
+---
+
+## 2. Architecture
+
+![RetailEdge AWS Architecture](architecture/RetailEdge_arch.png)
+
+### High-level design
+
+The target design follows a layered three-tier model:
+
+```text
+                         End Users
+                             |
+                       Route 53 / DNS
+                             |
+                         CloudFront
+                             |
+                 +-----------+-----------+
+                 |                       |
+             Static Assets          Dynamic Traffic
+                 |                       |
+                S3                      ALB
+                                         |
+                              +----------+----------+
+                              |                     |
+                         Private AZ-1          Private AZ-2
+                              |                     |
+                           EC2/ASG              EC2/ASG
+                              |                     |
+                              +----------+----------+
+                                         |
+                         +---------------+---------------+
+                         |                               |
+                      RDS MySQL                    ElastiCache Redis
+
+```
+
+The diagram represents the **target architecture/design**. The Terraform implementation is the source of truth for what is actually provisioned in the current repository.
+
+### Current implementation boundary
+
+| Component | Current status | Notes |
+|---|---|---|
+| VPC | **Implemented** | `10.0.0.0/16` network foundation |
+| Public subnets | **Implemented** | Two subnets across `us-east-1a` and `us-east-1b` |
+| Private application subnets | **Implemented** | Two application subnets across two AZs |
+| Database subnets | **Implemented** | Two database subnets across two AZs |
+| Internet Gateway | **Implemented** | Attached to the VPC |
+| Route tables | **Implemented** | Separate public, private, and database routing |
+| Security Groups | **Implemented** | Tier-to-tier rules for ALB, application, RDS, and Redis |
+| Application Load Balancer | **Implemented** | Internet-facing ALB |
+| Target Group | **Implemented** | HTTP traffic on application port `8080` |
+| Launch Template | **Implemented** | Golden AMI + IAM instance profile + IMDSv2 |
+| Auto Scaling Group | **Implemented** | Private application subnets + ELB health checks |
+| Target tracking | **Implemented** | CPU-based Auto Scaling policy |
+| Scheduled scaling | **Supported** | Configurable through environment variables |
+| RDS MySQL | **Implemented** | Encrypted managed MySQL database |
+| ElastiCache Redis | **Implemented** | Optional; supports single or multi-node configuration |
+| S3 | **Implemented** | Private, versioned, encrypted buckets |
+| GitHub Actions | **Implemented** | Terraform validation + application deployment workflows |
+| GitHub OIDC | **Implemented** | Short-lived AWS authentication for Actions |
+| AWS Systems Manager | **Implemented** | Used for application deployment to EC2 |
+| CloudWatch alarms | **Implemented** | ALB latency/error, RDS CPU, and Redis hit-rate monitoring |
+| Route 53 | **Design component** | Present in the target architecture; no Route 53 Terraform resource in the current implementation |
+| CloudFront | **Design component** | Present in the target architecture; no CloudFront Terraform resource in the current implementation |
+| AWS DMS | **Migration design** | Migration plan is documented; no DMS Terraform resource in the current implementation |
+| Amazon ECR | **Not used** | Container deployment was intentionally removed from the current implementation |
+| CodeDeploy | **Not used** | Replaced by SSM-based deployment in the current CI/CD implementation |
+| NAT Gateway | **Not used in sandbox** | Sandbox routing intentionally avoids NAT Gateway cost |
+| SNS | **Not used** | Monitoring alarms are configured without SNS notification resources |
+
+---
+
+## 3. Terraform Layered Structure
+
+The infrastructure is split into five logical layers:
+
+```text
+Layer 1 — Architecture & Documentation
+        |
+        v
+Layer 2 — Network Foundation & Security
+        |
+        v
+Layer 3 — Compute & Auto Scaling
+        |
+        v
+Layer 4 — Data Services
+        |
+        v
+Layer 5 — CI/CD, Monitoring & Go-Live
+```
+
+### Repository structure
 
 ```text
 retailedge-aws/
+├── .github/
+│   └── workflows/
+│       ├── deploy.yml
+│       └── terraform-check.yml
+│
 ├── app/
 │   └── app.py
+│
 ├── ami/
 │   └── user-data.txt
+│
 ├── architecture/
+│   ├── RetailEdge_arch.png
+│   ├── architecture-design.md
+│   ├── migration-strategy.md
+│   └── tco.md
+│
 ├── docs/
-├── layers/
-│   ├── layer-01-architecture/
-│   ├── layer-02-network/
-│   ├── layer-03-compute/
-│   ├── layer-04-data/
-│   └── layer-05-cicd/
+│   ├── Q&A Notes.md
+│   ├── go-live-checklist.md
+│   └── pricing/
+│
 ├── environments/
-│   └── sandbox/ and production/
-└── .github/workflows/
+│   ├── sandbox/
+│   └── production/
+│
+└── layers/
+    ├── layer-01-architecture/
+    ├── layer-02-network/
+    ├── layer-03-compute/
+    ├── layer-04-data/
+    └── layer-05-cicd/
 ```
 
-## Deployment approach
+Each infrastructure layer contains its own Terraform configuration, variables, outputs, and supporting documentation where required.
 
-The Terraform roots are intentionally separated so the infrastructure can be applied and verified one layer at a time:
+---
+
+# 4. Layer 1 — Architecture & Migration Design
+
+Layer 1 is documentation-focused and does not create AWS resources.
+
+It contains:
+
+- High-level architecture design.
+- Migration strategy.
+- AWS service selection decisions.
+- Target three-tier architecture.
+- Cost/TCO documentation.
+- Go-live and migration planning material.
+
+The architecture diagram documents the intended end-state, while the Terraform layers define the resources selected for actual implementation.
+
+---
+
+# 5. Layer 2 — Network Foundation & Security
+
+The network layer creates the base AWS networking required by the application.
+
+### VPC
+
+- CIDR: `10.0.0.0/16`
+- DNS support enabled.
+- DNS hostnames enabled.
+- Region: `us-east-1`.
+
+### Availability Zones
+
+The default network design uses:
+
+- `us-east-1a`
+- `us-east-1b`
+
+### Subnet segmentation
+
+| Tier | Subnets | CIDR ranges |
+|---|---:|---|
+| Public / Web | 2 | `10.0.1.0/24`, `10.0.2.0/24` |
+| Private / Application | 2 | `10.0.11.0/24`, `10.0.12.0/24` |
+| Database | 2 | `10.0.21.0/24`, `10.0.22.0/24` |
+
+### Routing
+
+- One public route table provides the default Internet route through the Internet Gateway.
+- Private application subnets have dedicated route tables.
+- Database subnets use a dedicated database route table.
+- The sandbox does not deploy a NAT Gateway, keeping outbound infrastructure costs lower.
+
+### Security Groups
+
+Traffic is restricted by security-group references rather than broad application-to-database access:
 
 ```text
-Layer 2 Network
-      ↓
-Layer 3 Compute
-      ↓
-Layer 4 Data
-      ↓
-Layer 5 CI/CD + Monitoring
+Internet
+   |
+   | 80 / 443
+   v
+ ALB SG
+   |
+   | 8080
+   v
+ App SG
+   |\
+   | \ 6379
+   |  v
+   | Redis SG
+   |
+   | 3306
+   v
+ RDS SG
 ```
 
-Layer 1 is documentation and does not create AWS resources.
+The application tier accepts port `8080` traffic from the ALB security group. RDS accepts MySQL traffic on `3306` from the application security group, while Redis accepts `6379` from the application security group.
 
-The application deployment path is:
+---
+
+# 6. Layer 3 — Load Balancing, Compute & Auto Scaling
+
+## Application Load Balancer
+
+The compute layer creates an **internet-facing Application Load Balancer** in the public subnets.
+
+The ALB is connected to a target group configured for:
+
+- Protocol: `HTTP`
+- Application port: `8080`
+- Target type: EC2 instances
+- Health-check path: configurable
+- Health-check protocol: HTTP
+- Health-check interval: `30s`
+- Timeout: `5s`
+- Healthy threshold: `2`
+- Unhealthy threshold: `3`
+
+The HTTP listener can either forward directly to the target group for sandbox validation or redirect to HTTPS when an ACM certificate is supplied.
+
+## Launch Template
+
+The Launch Template provides repeatable EC2 configuration using:
+
+- Golden AMI.
+- Configurable instance type.
+- Application Security Group.
+- IAM Instance Profile.
+- Instance tagging.
+- IMDSv2 with required session tokens.
+
+The AMI used during the sandbox validation was:
 
 ```text
-GitHub push
-    ↓
+ami-003435f90dd012242
+```
+
+The application runs on port `8080`.
+
+## Auto Scaling Group
+
+The ASG launches instances into the private application subnets and attaches them to the ALB target group.
+
+It uses:
+
+- ELB health checks.
+- A `300` second health-check grace period.
+- Rolling instance refresh.
+- `90%` minimum healthy percentage during refresh.
+- Target tracking based on `ASGAverageCPUUtilization`.
+
+The production profile is designed around a `2 / 2 / 10` minimum / desired / maximum capacity model, while the sandbox profile uses smaller cost-controlled capacity.
+
+---
+
+# 7. Layer 4 — Data Services
+
+## Amazon RDS for MySQL
+
+The data layer provisions a managed MySQL database using:
+
+- MySQL `8.0`.
+- Encrypted storage.
+- Database subnet group using the two database subnets.
+- Security Group isolation from the application tier.
+- Port `3306`.
+- Configurable backup retention.
+
+The production profile supports Multi-AZ deployment. The sandbox profile intentionally uses Single-AZ with `db.t3.micro` to reduce cost during validation.
+
+## ElastiCache for Redis
+
+Redis is provisioned as an optional replication group in the database subnet tier.
+
+The configuration supports:
+
+- Configurable node type.
+- Configurable node count.
+- Multi-AZ and automatic failover when more than one node is configured.
+- At-rest encryption.
+- Transit encryption.
+- Security Group isolation.
+
+The sandbox example uses one `cache.t3.micro` node, while the Terraform resource supports multi-node configurations for higher availability.
+
+## S3
+
+The project uses private S3 buckets for application assets and CI artifacts.
+
+The bucket configuration includes:
+
+- Public access blocked.
+- Versioning enabled.
+- Server-side encryption using AES-256.
+- Optional Intelligent-Tiering for application assets.
+
+---
+
+# 8. Layer 5 — CI/CD & Operations
+
+The current deployment implementation uses **GitHub Actions + AWS OIDC + S3 + AWS Systems Manager**.
+
+### Application deployment flow
+
+```text
+GitHub push to main
+        |
+        v
 GitHub Actions
-    ↓
-Python validation + smoke test
-    ↓
-ZIP application artifact
-    ↓
-S3 artifact bucket
-    ↓
+        |
+        +--> Python compilation check
+        |
+        +--> Local application smoke test
+        |
+        +--> Package application as ZIP
+        |
+        v
+AWS OIDC authentication
+        |
+        v
+Private S3 artifact bucket
+        |
+        v
 AWS Systems Manager Run Command
-    ↓
-EC2 instances in the RetailEdge sandbox ASG
-    ↓
-Restart retailedge.service
-    ↓
-/health check
+        |
+        v
+RetailEdge EC2 instances
+        |
+        +--> Extract application
+        +--> Compile application
+        +--> Restart systemd service
+        +--> /health validation
 ```
 
-GitHub Actions authenticates to AWS through GitHub OIDC rather than long-lived AWS access keys. EC2 instances use an IAM instance profile with S3 read access and Systems Manager management permissions.
+### GitHub OIDC
 
-## Sandbox versus production
+GitHub Actions authenticates to AWS through an IAM OIDC trust relationship instead of storing long-lived AWS access keys in the repository.
 
-The repository contains two profiles using the same architecture decisions but different resource sizes.
+The trust policy is restricted to the RetailEdge GitHub repository using the repository owner and repository identifiers.
 
-The sandbox is designed to reduce cost while preserving the security boundaries of the target architecture:
+### EC2 IAM role
 
-- RDS Single-AZ with `db.t3.micro`.
-- Small EC2 Auto Scaling range.
-- One Redis node when enabled and affordable for the account.
-- No NAT Gateway or NAT Elastic IP.
-- HTTP ALB listener is available for sandbox validation when no ACM certificate/domain is configured.
+Application instances use an IAM instance profile with:
 
-Production retains the assignment's target values such as ASG min 2 / desired 2 / max 10 and RDS Multi-AZ.
+- `AmazonS3ReadOnlyAccess`
+- `AmazonSSMManagedInstanceCore`
 
-## CI/CD scope
+This allows the instances to retrieve application artifacts and be managed through Systems Manager without requiring SSH-based deployment automation.
 
-The repository does not use Docker, Amazon ECR, Amazon SNS, or CodeDeploy. CloudWatch alarms remain as monitoring controls, while notification delivery is intentionally outside the current architecture.
+---
 
-Application deployment is handled without CodeDeploy: GitHub Actions publishes a versioned application artifact to S3 and uses AWS Systems Manager Run Command to update the running EC2 instances and restart the systemd service.
+# 9. Monitoring
 
-## Application
+CloudWatch alarms are defined for the main operational signals:
 
-The sandbox application is a dependency-free Python HTTP service listening on port `8080`.
+| Alarm | Metric | Threshold |
+|---|---|---:|
+| High latency | ALB p95 `TargetResponseTime` | `> 800 ms` |
+| High error rate | ALB 5xx percentage | `> 1%` |
+| Database CPU | RDS `CPUUtilization` | `> 80%` |
+| Low cache hit rate | ElastiCache hit percentage | `< 70%` |
 
-- `/` — RetailEdge landing page.
-- `/health` — ALB health check endpoint returning `200 OK`.
-- `/info` — JSON service information and deployment status.
+The alarms use five-minute evaluation periods and are configured as monitoring controls for the deployed environment.
 
-The application source is kept under `app/app.py`; the AMI bootstrap script is responsible for Python/systemd provisioning and does not overwrite the application source.
+---
 
-## Pricing
+# 10. Application
 
-The Production AWS Pricing Calculator estimate is documented in [`docs/pricing/aws-pricing-estimate-production.md`](docs/pricing/aws-pricing-estimate-production.md).
+RetailEdge includes a lightweight dependency-free Python HTTP application used to validate the infrastructure path.
 
-The exported estimate is based on US East (N. Virginia) and reports an estimated $185.12/month before account-specific free-tier adjustments and other discounts.
+### Endpoints
 
-## Secrets
+| Endpoint | Purpose |
+|---|---|
+| `/` | Returns the RetailEdge application response |
+| `/health` | Returns `200 OK` for load-balancer health checks |
+| `/info` | Returns service/deployment information |
 
-Never commit AWS credentials, database passwords, or private SSH keys. Real passwords belong in local ignored tfvars files or another secret-management mechanism.
+The application listens on:
 
-## Validation
+```text
+0.0.0.0:8080
+```
 
-From each layer directory:
+The AMI bootstrap script installs Python and creates a `retailedge.service` systemd unit with automatic restart behavior.
+
+---
+
+# 11. Infrastructure as Code
+
+Terraform is the source of truth for the infrastructure implementation.
+
+Important Terraform resources include:
+
+### Networking
+
+- `aws_vpc`
+- `aws_internet_gateway`
+- `aws_subnet`
+- `aws_route_table`
+- `aws_route_table_association`
+- VPC security-group rule resources
+
+### Compute
+
+- `aws_lb`
+- `aws_lb_target_group`
+- `aws_lb_listener`
+- `aws_launch_template`
+- `aws_autoscaling_group`
+- `aws_autoscaling_policy`
+- `aws_autoscaling_schedule`
+
+### Data
+
+- `aws_db_subnet_group`
+- `aws_db_instance`
+- `aws_elasticache_subnet_group`
+- `aws_elasticache_replication_group`
+- `aws_s3_bucket`
+- S3 access-block, versioning, encryption, and tiering resources
+
+### Identity & operations
+
+- IAM roles and instance profiles.
+- GitHub Actions OIDC role.
+- CloudWatch metric alarms.
+
+The layer separation makes the infrastructure easier to validate, troubleshoot, and evolve independently.
+
+---
+
+# 12. Validation & Quality Checks
+
+Terraform validation is automated for Layers 2–5 through GitHub Actions.
+
+For each layer the workflow runs:
 
 ```bash
-terraform fmt -check
-terraform init
+terraform fmt -check -recursive
+terraform init -backend=false
 terraform validate
-terraform plan -var-file=../../environments/sandbox/layer-XX-*.tfvars
 ```
 
-Review the plan before `terraform apply`.
-
-## GitHub Actions setup
-
-Add the following repository secret before running `deploy.yml`:
+The application deployment workflow additionally performs:
 
 ```text
-AWS_ROLE_ARN=arn:aws:iam::<account-id>:role/retailedge-sandbox-github-actions
+Python compilation
+        ↓
+Application smoke test
+        ↓
+Package creation
+        ↓
+AWS identity verification
+        ↓
+S3 artifact upload
+        ↓
+SSM deployment
+        ↓
+Application health check
 ```
 
-The workflow uses OIDC and therefore does not require an AWS access key or secret key in GitHub.
+This provides both **Infrastructure as Code validation** and **application deployment validation**.
 
-## Important
+---
 
-The original starter `terraform/` directory is being replaced by the layer-based structure. The old files are kept only until the new implementation has been reviewed; they are not the source of truth.
+# 13. Sandbox vs Production
+
+The repository intentionally separates sandbox and production configuration.
+
+### Sandbox
+
+The sandbox profile is designed for affordable validation:
+
+- Smaller EC2 Auto Scaling range.
+- `db.t3.micro` RDS instance.
+- Single Redis node.
+- No NAT Gateway.
+- No container/ECR dependency.
+- No CodeDeploy dependency.
+- HTTP ALB validation is supported when no ACM certificate is configured.
+
+### Production
+
+The production configuration preserves the intended high-availability direction, including:
+
+- Two application instances as the baseline ASG capacity.
+- Maximum ASG capacity of `10`.
+- RDS Multi-AZ support.
+- Multi-node Redis capability.
+- Production-oriented network and availability boundaries.
+
+This separation allows the architecture to remain production-oriented without forcing unnecessary sandbox costs.
+
+---
+
+# 14. Security Principles
+
+The implementation follows several practical security controls:
+
+- Private application and database subnet tiers.
+- Security Group references between application tiers.
+- Database access limited to the application Security Group.
+- Redis access limited to the application Security Group.
+- S3 public access blocked.
+- S3 server-side encryption enabled.
+- IMDSv2 required on EC2 Launch Templates.
+- IAM roles used instead of embedding AWS credentials in instances.
+- GitHub Actions uses OIDC instead of long-lived AWS keys.
+- Sensitive database passwords are excluded from committed example configuration.
+
+No credentials, access keys, private keys, or database secrets are stored in the repository.
+
+---
+
+# 15. Migration & Go-Live Documentation
+
+The repository also contains supporting design material for the broader migration scenario, including:
+
+- Architecture design.
+- Migration strategy.
+- Database migration planning.
+- RPO/RTO considerations.
+- Cache hit/miss analysis.
+- Go-live checklist.
+- Production pricing estimate.
+- Project Q&A and implementation notes.
+
+Some AWS services in the original target architecture are documented as **migration/design components** rather than deployed sandbox resources. This distinction keeps the documentation aligned with the actual Terraform implementation.
+
+---
+
+# 16. Key Implementation Summary
+
+| Area | Implemented capability |
+|---|---|
+| Architecture | Three-tier AWS design with clear network/application/data separation |
+| Networking | VPC, six subnets, multi-AZ subnet layout, route tables, Internet Gateway |
+| Security | Tiered Security Groups, IAM roles, private subnets, IMDSv2, encrypted storage |
+| Load balancing | Internet-facing ALB + HTTP target group + health checks |
+| Compute | Launch Template + Golden AMI + EC2 Auto Scaling Group |
+| Scalability | CPU target tracking + rolling instance refresh + optional scheduled scaling |
+| Database | Managed MySQL with encrypted storage and configurable Multi-AZ |
+| Caching | ElastiCache Redis with encryption and multi-node failover support |
+| Storage | Private versioned and encrypted S3 buckets |
+| CI/CD | GitHub Actions, OIDC, S3 artifacts, SSM-based deployment |
+| Monitoring | CloudWatch alarms for ALB, RDS, and Redis |
+| Validation | Automated Terraform checks and application smoke/health checks |
+| Documentation | Architecture, migration, pricing, go-live, and implementation notes |
+
+---
+
+# 17. Quick Start
+
+Clone the repository:
+
+```bash
+git clone https://github.com/Youssef-Mohamd/retailedge-aws.git
+cd retailedge-aws
+```
+
+Validate a layer:
+
+```bash
+cd layers/layer-02-network
+terraform fmt -check -recursive
+terraform init -backend=false
+terraform validate
+```
+
+Repeat the validation process for:
+
+```text
+layers/layer-03-compute
+layers/layer-04-data
+layers/layer-05-cicd
+```
+
+Environment-specific example variables are provided under:
+
+```text
+environments/sandbox/
+environments/production/
+```
+
+Review the variables and AWS account configuration before running `terraform plan` or `terraform apply`.
+
+---
+
+# 18. Project Deliverables
+
+The repository provides:
+
+- Terraform infrastructure organized by implementation layer.
+- AWS three-tier architecture documentation.
+- Application source code.
+- Golden AMI bootstrap configuration.
+- Security and IAM configuration.
+- Auto Scaling and load-balancing configuration.
+- RDS and Redis infrastructure.
+- S3 storage configuration.
+- GitHub Actions workflows.
+- CloudWatch monitoring configuration.
+- Migration and go-live documentation.
+- Production pricing estimate.
+
+---
+
+## Repository
+
+**RetailEdge AWS Cloud Infrastructure**  
+https://github.com/Youssef-Mohamd/retailedge-aws
+
+---
+
+## Final Note
+
+RetailEdge demonstrates an end-to-end Infrastructure as Code workflow: **design → network foundation → secure compute → managed data services → automated deployment → monitoring → validation**.
+
+The repository intentionally distinguishes between the **target architecture** and the **resources actually implemented in Terraform**, making it clear which capabilities are deployed, configurable, or documented as future production/migration components.
