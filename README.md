@@ -613,16 +613,8 @@ The repository provides:
 - Production pricing estimate.
 
 ---
-
-## Repository
-
-**RetailEdge AWS Cloud Infrastructure**  
-https://github.com/Youssef-Mohamd/retailedge-aws
-
----
-
 ## Final Note
 
 RetailEdge demonstrates an end-to-end Infrastructure as Code workflow: **design → network foundation → secure compute → managed data services → automated deployment → monitoring → validation**.
 
-The repository intentionally distinguishes between the **target architecture** and the **resources actually implemented in Terraform**, making it clear which capabilities are deployed, configurable, or documented as future production/migration components.
+
