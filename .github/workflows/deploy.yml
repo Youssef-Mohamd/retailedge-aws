@@ -1,0 +1,127 @@
+name: RetailEdge CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: us-east-1
+  ARTIFACT_BUCKET_PREFIX: retailedge-sandbox-artifacts
+  ARTIFACT_KEY: releases/retailedge-app-${{ github.sha }}.zip
+
+jobs:
+  deploy:
+    name: Build, publish and deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate application
+        run: python -m py_compile app/app.py
+
+      - name: Run application smoke test
+        run: |
+          python app/app.py > /tmp/retailedge.log 2>&1 &
+          APP_PID=$!
+          trap 'kill $APP_PID 2>/dev/null || true' EXIT
+          sleep 1
+          curl --fail --silent http://127.0.0.1:8080/health
+          echo
+          curl --fail --silent http://127.0.0.1:8080/ | grep -q "RetailEdge"
+
+      - name: Package application
+        run: |
+          mkdir -p dist
+          cp app/app.py dist/app.py
+          cd dist
+          zip -q "retailedge-app-${GITHUB_SHA}.zip" app.py
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Resolve artifact bucket
+        id: aws
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "bucket=${ARTIFACT_BUCKET_PREFIX}-${ACCOUNT_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact to S3
+        run: |
+          aws s3 cp \
+            "dist/retailedge-app-${GITHUB_SHA}.zip" \
+            "s3://${{ steps.aws.outputs.bucket }}/${ARTIFACT_KEY}"
+
+      - name: Deploy to sandbox EC2 instances
+        run: |
+          set -euo pipefail
+
+          cat > commands.json <<EOF
+          {
+            "commands": [
+              "set -euo pipefail",
+              "mkdir -p /opt/retailedge",
+              "aws s3 cp s3://${{ steps.aws.outputs.bucket }}/${ARTIFACT_KEY} /opt/retailedge/retailedge-app.zip",
+              "python3 -m zipfile -e /opt/retailedge/retailedge-app.zip /opt/retailedge",
+              "python3 -m py_compile /opt/retailedge/app.py",
+              "systemctl restart retailedge",
+              "curl -fsS http://127.0.0.1:8080/health"
+            ]
+          }
+          EOF
+
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=tag:Project,Values=RetailEdge" "Key=tag:Environment,Values=sandbox" \
+            --comment "RetailEdge deployment ${GITHUB_SHA}" \
+            --parameters file://commands.json \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM command: ${COMMAND_ID}"
+
+          for attempt in {1..30}; do
+            sleep 10
+
+            STATUSES=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --details \
+              --query "CommandInvocations[].Status" \
+              --output text)
+
+            echo "SSM statuses: ${STATUSES:-waiting}"
+
+            if echo "$STATUSES" | grep -Eq "Failed|Cancelled|TimedOut|Cancelling"; then
+              echo "Deployment failed."
+              aws ssm list-command-invocations \
+                --command-id "$COMMAND_ID" \
+                --details \
+                --output json
+              exit 1
+            fi
+
+            if [ -n "$STATUSES" ] && ! echo "$STATUSES" | grep -Eq "Pending|InProgress|Delayed"; then
+              echo "Deployment completed successfully."
+              exit 0
+            fi
+          done
+
+          echo "Deployment timed out."
+          exit 1

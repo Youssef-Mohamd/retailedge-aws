@@ -1,7 +1,6 @@
 aws_region = "us-east-1"
 environment = "sandbox"
 github_repository = "Youssef-Mohamd/retailedge-aws"
-autoscaling_group_name = "retailedge-sandbox-asg"
 alb_arn_suffix = "app/retailedge-sandbox-alb/xxxxxxxxxxxxxxxx"
 rds_instance_identifier = "retailedge-sandbox-mysql"
 redis_replication_group_id = "retailedge-sandbox-redis"
