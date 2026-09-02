@@ -26,9 +26,7 @@ The infrastructure is defined as code and organized into independent Terraform l
 
 ---
 
-## 2. Architecture
 
-![RetailEdge AWS Architecture](architecture/RetailEdge_arch.png)
 
 ### High-level design
 
